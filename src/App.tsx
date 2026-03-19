@@ -40,36 +40,46 @@ export default function App() {
     try {
       const reader = new FileReader();
       reader.onload = async () => {
-        const base64 = (reader.result as string).split(',')[1];
-        const data = await extractOrderData(base64);
-        if (data) {
-          setOrderData(data);
-          const defaultDate = calculateDefaultDeliveryDate(data.manufacturingDays || 25);
-          setManualDeliveryDate(defaultDate);
-          
-          // Handle print date from PDF footer
-          if (data.printDate) {
-            const parts = data.printDate.split('/');
-            if (parts.length === 3) {
-              const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-              setManualPrintDate(isoDate);
+        try {
+          const base64 = (reader.result as string).split(',')[1];
+          const data = await extractOrderData(base64);
+          if (data) {
+            setOrderData(data);
+            const defaultDate = calculateDefaultDeliveryDate(data.manufacturingDays || 25);
+            setManualDeliveryDate(defaultDate);
+            
+            // Handle print date from PDF footer
+            if (data.printDate) {
+              const parts = data.printDate.split('/');
+              if (parts.length === 3) {
+                const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                setManualPrintDate(isoDate);
+              } else {
+                setManualPrintDate(format(new Date(), 'yyyy-MM-dd'));
+              }
             } else {
               setManualPrintDate(format(new Date(), 'yyyy-MM-dd'));
             }
-          } else {
-            setManualPrintDate(format(new Date(), 'yyyy-MM-dd'));
-          }
 
-          setView('preview');
-        } else {
-          setError('Não foi possível extrair os dados do pedido. Verifique se o PDF é válido.');
+            setView('preview');
+          } else {
+            setError('Não foi possível extrair os dados do pedido. Verifique se o PDF é válido.');
+          }
+        } catch (err: any) {
+          console.error(err);
+          if (err.message?.includes('GEMINI_API_KEY')) {
+            setError('Erro: A chave da API Gemini não foi configurada no Vercel. Por favor, adicione a variável de ambiente GEMINI_API_KEY.');
+          } else {
+            setError('Ocorreu um erro ao processar o arquivo: ' + (err.message || 'Erro desconhecido'));
+          }
+        } finally {
+          setIsExtracting(false);
         }
-        setIsExtracting(false);
       };
       reader.readAsDataURL(file);
     } catch (err) {
       console.error(err);
-      setError('Ocorreu um erro ao processar o arquivo.');
+      setError('Ocorreu um erro ao ler o arquivo.');
       setIsExtracting(false);
     }
   }, []);
