@@ -1,0 +1,5 @@
+{
+  "name": "Gerador de OP - Dimensão Iluminação",
+  "description": "Gera ordens de produção automaticamente a partir de pedidos em PDF.",
+  "requestFramePermissions": []
+}
